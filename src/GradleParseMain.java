@@ -13,7 +13,7 @@ public class GradleParseMain {
 
         String baseStarProjectPath = args[0];
         //1-index文件夹内的文件都已经全部解析完
-        final int MAX = 3;
+        final int MAX = 2;
         int index = getCurrentIndex();
 
         for (int i = index + 1; i < MAX; i++) {
@@ -28,6 +28,7 @@ public class GradleParseMain {
             }
             //根据文件名排序
             Collections.sort(projectFiles, new FileComparator());
+            L.l(String.valueOf(projectFiles.size()));
             for (File projectFile : projectFiles) {
                 //projectFile指的每一个项目文件夹
                 List<GradleFile> gradleFileList = FileUtil.getAllGradleFiles(projectFile.getAbsolutePath());
@@ -38,6 +39,7 @@ public class GradleParseMain {
                 for (int gradleFileIndex = 0; gradleFileIndex < size; gradleFileIndex++) {
                     ParseUtil.parse(gradleFileList.get(gradleFileIndex).getContent());
                 }
+                ParseUtil.replaceDependencyValue();
                 List<String> dependencies = ParseUtil.getDependencies();
                 String fileName = projectFile.getName();
                 String company = fileName.split("__fdse__")[0];
@@ -50,7 +52,6 @@ public class GradleParseMain {
                     L.l(s);
                 }
                 L.l("============================");
-                ParseUtil.clearDependencies();
             }
         }
 
