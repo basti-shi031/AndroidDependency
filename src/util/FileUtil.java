@@ -109,10 +109,17 @@ public class FileUtil {
                             } else {
                                 //不是项目构建的gradle，是开发者自己写的gradle
                                 GradleFile gradleFile = new GradleFile(file.getPath());
+                                gradleFile.setType("build.gradle");
                                 gradleFile.setBuildFile(false);
                                 gradleFile.setRootFile(isRootFile(file.getAbsolutePath()));
                                 gradleFiles.add(gradleFile);
                             }
+                        } else if (file.getName().endsWith(".properties")) {
+                            GradleFile gradleFile = new GradleFile(file.getPath());
+                            gradleFile.setRootFile(isRootFile(file.getAbsolutePath()));
+                            gradleFile.setType("gradle.properties");
+                            gradleFile.setBuildFile(false);
+                            gradleFiles.add(gradleFile);
                         }
                     } else if (file.isDirectory() && isPossibleDirectory(file)) {
                         //如果是目录，需要递归且满足条件

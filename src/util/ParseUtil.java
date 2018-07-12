@@ -10,11 +10,16 @@ import org.codehaus.groovy.ast.stmt.ExpressionStatement;
 import org.codehaus.groovy.ast.stmt.Statement;
 import org.codehaus.groovy.control.SourceUnit;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.*;
 
 public class ParseUtil {
 
-    public static void parse(String gradleString) {
+    static String path1;
+
+    public static void parse(String gradleString, String path) {
+        path1 = path;
         SourceUnit unit = SourceUnit.create("gradle", gradleString);
         unit.parse();
         unit.completePhase();
@@ -30,6 +35,23 @@ public class ParseUtil {
             //System.out.println(methodNode.getText());
             // System.out.println(methodNode.toString());
             methodNode.getCode().visit(transformer);
+        }
+    }
+
+    public static void parseProperties(String path) {
+        path1 = path;
+        Properties properties = new Properties();
+        try {
+            properties.load(new FileInputStream(path));
+            Iterator it = properties.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry entry = (Map.Entry) it.next();
+                Object key = entry.getKey();
+                Object value = entry.getValue();
+                getDependencyValue().put(key.toString(), value.toString());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -53,12 +75,15 @@ public class ParseUtil {
                 String valueDependency = value.get(dependency.split("\\.")[1].trim());//valueDependency = cardViewV7 stetho
                 if (valueDependency != null) {
                     dependencies.set(index, valueDependency);
-                    if (valueDependency.contains("$")) {
-                        String fakeVersion = valueDependency.split("\\$")[1].trim();
-                        valueDependency = valueDependency.replace("$" + fakeVersion, value.get(fakeVersion));
-                        dependencies.set(index, valueDependency);
-                    }
                 }
+            }else  if (dependency.contains("$")) {
+                String fakeVersion = dependency.split("\\$")[1].trim();
+                dependency = dependency.replace("$" + fakeVersion, value.get(fakeVersion));
+                dependencies.set(index, dependency);
+            }else if (dependency.startsWith("[")&&dependency.endsWith("]")){
+                //[group:io.dropwizard, name:dropwizard-jdbi, version:1.0.0-rc2]
+                dependency = dependency.substring(1,dependency.length()-1);
+
             }
             index++;
         }
@@ -96,23 +121,27 @@ public class ParseUtil {
         @Override
         public void visitMethodCallExpression(MethodCallExpression call) {
             //My code
-            if (isDependencyKey(call.getMethodAsString())) {
-                Expression expression = call.getArguments();
-                String dependency = expression.getText();
-                dependency = simpleResolve(dependency);
-                if (dependency == null || dependency.length() == 0) {
-                    return;
+
+            String method = call.getMethodAsString();
+            if (method != null) {
+                if (isDependencyKey(call.getMethodAsString())) {
+                    Expression expression = call.getArguments();
+                    String dependency = expression.getText();
+                    dependency = simpleResolve(dependency);
+                    if (dependency == null || dependency.length() == 0) {
+                        return;
+                    }
+                    dependencies.add(dependency);
+                } else if (call.getMethodAsString().equals("set")) {
+                    String text = call.getArguments().getText();
+                    //(depAppCompat, com.android.support:appcompat-v7:23.2.0)
+                    //去除括号
+                    text = removeBracket(text);
+                    dependencyValue.put(text.split(",")[0].trim(), text.split(",")[1].trim());
                 }
-                dependencies.add(dependency);
-            } else if (call.getMethodAsString().equals("set")) {
-                String text = call.getArguments().getText();
-                //(depAppCompat, com.android.support:appcompat-v7:23.2.0)
-                //去除括号
-                text = removeBracket(text);
-                dependencyValue.put(text.split(",")[0].trim(), text.split(",")[1].trim());
+                methodSet.add(call.getMethodAsString());
+                super.visitMethodCallExpression(call);
             }
-            methodSet.add(call.getMethodAsString());
-            super.visitMethodCallExpression(call);
         }
 
         @Override
@@ -129,9 +158,11 @@ public class ParseUtil {
                             String leftValue = left.getText();
                             String rightValue = "";
                             if (right instanceof ConstantExpression) {
-                                rightValue = ((ConstantExpression) right).getValue().toString();
-                                // L.l(leftValue, rightValue);
-                                dependencyValue.put(leftValue, rightValue);
+                                if (((ConstantExpression) right).getValue() != null) {
+                                    rightValue = ((ConstantExpression) right).getValue().toString();
+                                    // L.l(leftValue, rightValue);
+                                    dependencyValue.put(leftValue, rightValue);
+                                }
                             } else if (right instanceof MapExpression) {
                                 List<MapEntryExpression> expressions = ((MapExpression) right).getMapEntryExpressions();
                                 for (MapEntryExpression mapEntryExpression : expressions) {
@@ -180,7 +211,7 @@ public class ParseUtil {
             }
 
             //compile fileTree([dir:libs, include:[*.jar]]) 此类排除
-            if (result.startsWith("fileTree")){
+            if (result.startsWith("fileTree")) {
                 return null;
             }
 

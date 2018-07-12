@@ -30,7 +30,7 @@ public class ParseCompileCategory {
                 L.l("共找到",String.valueOf(size),"个文件");
                 for (int i = 1; i < size; i++) {
                     GradleFile gradleFile = gradleFileList.get(i);
-                    ParseUtil.parse(gradleFile.getContent());
+                    ParseUtil.parse(gradleFile.getContent(), gradleFile.getPath());
                 }
             }
         }

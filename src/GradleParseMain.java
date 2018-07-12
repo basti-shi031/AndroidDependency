@@ -1,5 +1,6 @@
 import bean.GradleFile;
 import com.google.gson.JsonParser;
+import config.Config;
 import util.FileUtil;
 import util.L;
 import util.ParseUtil;
@@ -31,27 +32,37 @@ public class GradleParseMain {
             L.l(String.valueOf(projectFiles.size()));
             for (File projectFile : projectFiles) {
                 //projectFile指的每一个项目文件夹
+                if (Config.UNSOLVED_PROJECT.contains(projectFile.getAbsolutePath())){
+                    continue;
+                }
                 List<GradleFile> gradleFileList = FileUtil.getAllGradleFiles(projectFile.getAbsolutePath());
                 if (gradleFileList == null || gradleFileList.size() <= 1) {
                     continue;
                 }
-                int size = gradleFileList.size();
-                for (int gradleFileIndex = 0; gradleFileIndex < size; gradleFileIndex++) {
-                    ParseUtil.parse(gradleFileList.get(gradleFileIndex).getContent());
-                }
-                ParseUtil.replaceDependencyValue();
-                List<String> dependencies = ParseUtil.getDependencies();
                 String fileName = projectFile.getName();
                 String company = fileName.split("__fdse__")[0];
                 String projectName = fileName.split("__fdse__")[1];
 
                 L.l(company, projectName);
+                int size = gradleFileList.size();
+                for (int gradleFileIndex = 0; gradleFileIndex < size; gradleFileIndex++) {
+                    GradleFile gradleFile = gradleFileList.get(gradleFileIndex);
+                    if (gradleFile.getType().equals("build.gradle")) {
+                        ParseUtil.parse(gradleFile.getContent(), gradleFile.getPath());
+                    } else if (gradleFile.getType().equals("gradle.properties")) {
+                        ParseUtil.parseProperties(gradleFile.getPath());
+                    }
+                }
+                ParseUtil.replaceDependencyValue();
+                List<String> dependencies = ParseUtil.getDependencies();
+
                 L.l("============================");
                 Set<String> dependenciesSet = new HashSet<>(dependencies);
-                for (String s: dependenciesSet){
+                for (String s : dependenciesSet) {
                     L.l(s);
                 }
                 L.l("============================");
+                ParseUtil.clearDependencies();
             }
         }
 
