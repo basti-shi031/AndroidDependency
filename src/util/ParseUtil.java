@@ -66,7 +66,7 @@ public class ParseUtil {
         int index = 0;
         for (String dependency : dependencies) {
             //     L.l(dependency);
-            if (dependency.contains("group:junit, name:junit, version:4.11")){
+            if (dependency.contains("group:junit, name:junit, version:4.11")) {
                 int a = 1;
             }
             if (dependency.contains("()")) {
@@ -76,56 +76,69 @@ public class ParseUtil {
                 //特殊处理 [Rajawali-Rajawali]
                 dependency = dependency.split("\\.")[1].trim();
                 dependencies.set(index, value.get(dependency));
-            } else if (dependency.startsWith("featureDependencies.") || dependency.startsWith("aptDependencies.")) {
+            } else if (dependency.startsWith("featureDependencies.") || dependency.startsWith("aptDependencies.") || dependency.startsWith("libs.")||dependency.startsWith("deps.")) {
                 //[Piasy-AndroidTDDBootStrap] featureDependencies.cardViewV7
                 dependency = value.get(dependency.split("\\.")[1].trim());//valueDependency = cardViewV7 stetho
                 if (dependency != null) {
                     dependencies.set(index, dependency);
                 }
             } else if (dependency.contains("$")) {
+                //$version
+                //$project.version
                 String fakeVersion = dependency.split("\\$")[1].trim();
-                if (value.get(fakeVersion) == null) {
+                String tempVersion = fakeVersion;
+                if (tempVersion.contains(".")){
+                    if (fakeVersion.equals("versions.powermock")){
+                        int a = 1;
+                    }
+                    String[] temp = fakeVersion.split("\\.");
+                    int size = temp.length;
+                    tempVersion = temp[size-1];
+                }
+                if (value.get(tempVersion) == null) {
                     continue;
                 }
-                dependency = dependency.replace("$" + fakeVersion, value.get(fakeVersion));
+                dependency = dependency.replace("$" + fakeVersion, value.get(tempVersion));
                 dependencies.set(index, dependency);
             } else if (dependency.startsWith("group:") || dependency.startsWith("name:")) {
                 dependency = "[" + dependency + "]";
             }
-            if (dependency.startsWith("[") && dependency.endsWith("]")) {
-                //[group:io.dropwizard, name:dropwizard-jdbi, version:1.0.0-rc2]
-                dependency = dependency.substring(1, dependency.length() - 1);
-                String splitGroups[] = dependency.split(",");
-                Map<String, String> maps = new HashMap<>();
-                for (String splitGroup : splitGroups) {
-                    String[] keyValue = splitGroup.trim().split(":");
-                    maps.put(keyValue[0], keyValue[1]);
-                }
-                //拼接成com.google.android.support:wearable:1.3.0
-                String groupName = maps.get("group");
-                String moduleName = maps.get("name");
-                String version = maps.get("version");
-                dependency = "";
-                if (groupName != null) {
-                    dependency = groupName + ":";
-                }
-                if (moduleName != null) {
-                    dependency = dependency + moduleName + ":";
-                }
-                if (version != null) {
-                    dependency = dependency + version;
-                }
-                if (dependency.endsWith(":")) {
-                    dependency = dependency.substring(0, dependency.length() - 1);
-                }
-                dependencies.set(index, dependency);
-            } else if (dependency.startsWith("rootProject") || dependency.startsWith("rootproject")) {
-                String[] tempDependencies = dependency.split("\\.");
-                if (tempDependencies.length >= 1) {
-                    dependency = tempDependencies[tempDependencies.length - 1];
-                    dependency = value.get(dependency);
-                    if (dependency != null) {
-                        dependencies.set(index, dependency);
+            if (dependency != null) {
+                if (dependency.startsWith("[") && dependency.endsWith("]")) {
+                    //[group:io.dropwizard, name:dropwizard-jdbi, version:1.0.0-rc2]
+                    dependency = dependency.substring(1, dependency.length() - 1);
+                    String splitGroups[] = dependency.split(",");
+                    Map<String, String> maps = new HashMap<>();
+                    for (String splitGroup : splitGroups) {
+                        String[] keyValue = splitGroup.trim().split(":");
+                        maps.put(keyValue[0], keyValue[1]);
+                    }
+                    //拼接成com.google.android.support:wearable:1.3.0
+                    String groupName = maps.get("group");
+                    String moduleName = maps.get("name");
+                    String version = maps.get("version");
+                    dependency = "";
+                    if (groupName != null) {
+                        dependency = groupName + ":";
+                    }
+                    if (moduleName != null) {
+                        dependency = dependency + moduleName + ":";
+                    }
+                    if (version != null) {
+                        dependency = dependency + version;
+                    }
+                    if (dependency.endsWith(":")) {
+                        dependency = dependency.substring(0, dependency.length() - 1);
+                    }
+                    dependencies.set(index, dependency);
+                } else if (dependency.startsWith("rootProject") || dependency.startsWith("rootproject")) {
+                    String[] tempDependencies = dependency.split("\\.");
+                    if (tempDependencies.length >= 1) {
+                        dependency = tempDependencies[tempDependencies.length - 1];
+                        dependency = value.get(dependency);
+                        if (dependency != null) {
+                            dependencies.set(index, dependency);
+                        }
                     }
                 }
             }
@@ -137,7 +150,7 @@ public class ParseUtil {
             }
 
 
-            if (getVersion(dependency) != null && getVersion(dependency).startsWith("project.")) {
+            if (dependency!=null&&getVersion(dependency) != null && getVersion(dependency).startsWith("project.")) {
                 //org.springframework.security:spring-security-config:project.spring-security.version
                 String[] versionTemp = dependency.split("project\\.");
                 String fakeVersion = versionTemp[versionTemp.length - 1];
@@ -149,9 +162,6 @@ public class ParseUtil {
 
             index++;
         }
-
-
-        clearDependencyValue();
 
     }
 
@@ -185,7 +195,7 @@ public class ParseUtil {
         return parseBuildGradle.getDependencyValue();
     }
 
-    private static void clearDependencyValue() {
+    public static void clearDependencyValue() {
         parseBuildGradle.clearDependencyValue();
     }
 
@@ -193,6 +203,26 @@ public class ParseUtil {
         static Set<String> methodSet = new HashSet<>();
         static List<String> dependencies = new ArrayList<>();//存放依赖
         static Map<String, String> dependencyValue = new HashMap();//存放键值对，用于替换
+
+        @Override
+        public void visitMapEntryExpression(MapEntryExpression expression) {
+            super.visitMapEntryExpression(expression);
+            Expression keyExpression = expression.getKeyExpression();
+            Expression valueExpression = expression.getValueExpression();
+            String leftValue = "";
+            String rightValue = "";
+            if (keyExpression instanceof ConstantExpression) {
+                leftValue = keyExpression.getText();
+            }
+            if (valueExpression instanceof ConstantExpression) {
+                rightValue = valueExpression.getText();
+            }else if (valueExpression instanceof GStringExpression){
+                rightValue = valueExpression.getText();
+            }
+            if (leftValue.length() != 0 && rightValue.length() != 0) {
+                dependencyValue.put(leftValue, rightValue);
+            }
+        }
 
         @Override
         public void visitMethodCallExpression(MethodCallExpression call) {

@@ -69,6 +69,7 @@ public class GradleParseMain {
                 }
                 ParseUtil.replaceDependencyValue();
                 ParseUtil.replaceDependencyValue();
+                ParseUtil.clearDependencyValue();
                 List<String> dependencies = ParseUtil.getDependencies();
 
                 L.l("============================");

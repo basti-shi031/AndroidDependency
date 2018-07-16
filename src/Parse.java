@@ -12,8 +12,9 @@ import java.util.List;
 
 public class Parse {
     public static void main(String args[]) {
-        String source = "dependencies {\n" +
-                "    compile rootProject.ext.libSupportV7}";
+        String source = "libs += [\n" +
+                "  activation: \"javax.activation:activation:$versions.activation\",\n" +
+                "  apacheda: \"org.apache.directory.api:api-all:$versions.apacheda\"]";
         SourceUnit unit = SourceUnit.create("gradle", source);
         unit.parse();
         unit.completePhase();
