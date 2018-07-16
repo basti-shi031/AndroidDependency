@@ -21,6 +21,9 @@ public class GradleParseMain {
             String projectPath = baseStarProjectPath + "//starproject" + String.valueOf(i);
             File[] tempFiles = new File(projectPath).listFiles();
             List<File> projectFiles = new ArrayList<>();
+            for (String s : Config.UNSOLVED_PROJECT) {
+                L.l(s);
+            }
             //筛去非dir类型的文件
             for (File projectFile : tempFiles) {
                 if (projectFile.isDirectory()) {
@@ -32,7 +35,18 @@ public class GradleParseMain {
             L.l(String.valueOf(projectFiles.size()));
             for (File projectFile : projectFiles) {
                 //projectFile指的每一个项目文件夹
-                if (Config.UNSOLVED_PROJECT.contains(projectFile.getAbsolutePath())){
+                L.l(projectFile.getAbsolutePath());
+                if (projectFile.getAbsolutePath().contains("D:\\starproject\\starproject1\\airbnb__fdse__epoxy"))
+                {
+                    int a = 1;
+                }
+                String test = "D:\\starProject\\starproject1\\airbnb__fdse__epoxy";
+                String path111 = projectFile.getAbsolutePath();
+                if (Config.UNSOLVED_PROJECT.contains(test)){
+                    int b = 1;
+                }
+                boolean equal = path111.equals(test);
+                if (Config.UNSOLVED_PROJECT.contains(path111)) {
                     continue;
                 }
                 List<GradleFile> gradleFileList = FileUtil.getAllGradleFiles(projectFile.getAbsolutePath());
@@ -49,10 +63,11 @@ public class GradleParseMain {
                     GradleFile gradleFile = gradleFileList.get(gradleFileIndex);
                     if (gradleFile.getType().equals("build.gradle")) {
                         ParseUtil.parse(gradleFile.getContent(), gradleFile.getPath());
-                    } else if (gradleFile.getType().equals("gradle.properties")) {
+                    } else if (gradleFile.getType().endsWith("properties")) {
                         ParseUtil.parseProperties(gradleFile.getPath());
                     }
                 }
+                ParseUtil.replaceDependencyValue();
                 ParseUtil.replaceDependencyValue();
                 List<String> dependencies = ParseUtil.getDependencies();
 

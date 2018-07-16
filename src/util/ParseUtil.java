@@ -66,31 +66,107 @@ public class ParseUtil {
         int index = 0;
         for (String dependency : dependencies) {
             //     L.l(dependency);
-
-            if (dependency.startsWith("project.")) {
+            if (dependency.contains("group:junit, name:junit, version:4.11")){
+                int a = 1;
+            }
+            if (dependency.contains("()")) {
+                //files(org.gradle.internal.jvm.Jvm.current().getToolsJar())
+                dependencies.set(index, "");
+            } else if (dependency.startsWith("project.")) {
                 //特殊处理 [Rajawali-Rajawali]
-                dependencies.set(index, value.get(dependency.split("\\.")[1].trim()));
+                dependency = dependency.split("\\.")[1].trim();
+                dependencies.set(index, value.get(dependency));
             } else if (dependency.startsWith("featureDependencies.") || dependency.startsWith("aptDependencies.")) {
                 //[Piasy-AndroidTDDBootStrap] featureDependencies.cardViewV7
-                String valueDependency = value.get(dependency.split("\\.")[1].trim());//valueDependency = cardViewV7 stetho
-                if (valueDependency != null) {
-                    dependencies.set(index, valueDependency);
+                dependency = value.get(dependency.split("\\.")[1].trim());//valueDependency = cardViewV7 stetho
+                if (dependency != null) {
+                    dependencies.set(index, dependency);
                 }
-            }else  if (dependency.contains("$")) {
+            } else if (dependency.contains("$")) {
                 String fakeVersion = dependency.split("\\$")[1].trim();
+                if (value.get(fakeVersion) == null) {
+                    continue;
+                }
                 dependency = dependency.replace("$" + fakeVersion, value.get(fakeVersion));
                 dependencies.set(index, dependency);
-            }else if (dependency.startsWith("[")&&dependency.endsWith("]")){
-                //[group:io.dropwizard, name:dropwizard-jdbi, version:1.0.0-rc2]
-                dependency = dependency.substring(1,dependency.length()-1);
-
+            } else if (dependency.startsWith("group:") || dependency.startsWith("name:")) {
+                dependency = "[" + dependency + "]";
             }
+            if (dependency.startsWith("[") && dependency.endsWith("]")) {
+                //[group:io.dropwizard, name:dropwizard-jdbi, version:1.0.0-rc2]
+                dependency = dependency.substring(1, dependency.length() - 1);
+                String splitGroups[] = dependency.split(",");
+                Map<String, String> maps = new HashMap<>();
+                for (String splitGroup : splitGroups) {
+                    String[] keyValue = splitGroup.trim().split(":");
+                    maps.put(keyValue[0], keyValue[1]);
+                }
+                //拼接成com.google.android.support:wearable:1.3.0
+                String groupName = maps.get("group");
+                String moduleName = maps.get("name");
+                String version = maps.get("version");
+                dependency = "";
+                if (groupName != null) {
+                    dependency = groupName + ":";
+                }
+                if (moduleName != null) {
+                    dependency = dependency + moduleName + ":";
+                }
+                if (version != null) {
+                    dependency = dependency + version;
+                }
+                if (dependency.endsWith(":")) {
+                    dependency = dependency.substring(0, dependency.length() - 1);
+                }
+                dependencies.set(index, dependency);
+            } else if (dependency.startsWith("rootProject") || dependency.startsWith("rootproject")) {
+                String[] tempDependencies = dependency.split("\\.");
+                if (tempDependencies.length >= 1) {
+                    dependency = tempDependencies[tempDependencies.length - 1];
+                    dependency = value.get(dependency);
+                    if (dependency != null) {
+                        dependencies.set(index, dependency);
+                    }
+                }
+            }
+            if (dependency != null) {
+                dependency = simpleResolve(dependency);
+                if (dependency != null) {
+                    dependencies.set(index, dependency);
+                }
+            }
+
+
+            if (getVersion(dependency) != null && getVersion(dependency).startsWith("project.")) {
+                //org.springframework.security:spring-security-config:project.spring-security.version
+                String[] versionTemp = dependency.split("project\\.");
+                String fakeVersion = versionTemp[versionTemp.length - 1];
+                if (value.get(fakeVersion.trim()) != null) {
+                    dependency = dependency.replace("project." + fakeVersion, value.get(fakeVersion.trim()));
+                    dependencies.set(index, dependency);
+                }
+            }
+
             index++;
         }
 
 
         clearDependencyValue();
 
+    }
+
+    /**
+     * 分割出版本号
+     *
+     * @param dependency
+     * @return
+     */
+    private static String getVersion(String dependency) {
+        String[] temp = dependency.split(":");
+        if (temp.length >= 3) {
+            return temp[2];
+        }
+        return null;
     }
 
     public static Set<String> getMethodSet() {
@@ -125,6 +201,7 @@ public class ParseUtil {
             String method = call.getMethodAsString();
             if (method != null) {
                 if (isDependencyKey(call.getMethodAsString())) {
+
                     Expression expression = call.getArguments();
                     String dependency = expression.getText();
                     dependency = simpleResolve(dependency);
@@ -142,6 +219,31 @@ public class ParseUtil {
                 methodSet.add(call.getMethodAsString());
                 super.visitMethodCallExpression(call);
             }
+        }
+
+        @Override
+        public void visitBinaryExpression(BinaryExpression expression) {
+            Expression leftExpression = expression.getLeftExpression();
+            Expression rightExpression = expression.getRightExpression();
+            String leftValue = "";
+            String rightValue = "";
+            if (leftExpression instanceof PropertyExpression) {
+                leftValue = ((PropertyExpression) leftExpression).getProperty().getText();
+            } else if (leftExpression instanceof VariableExpression) {
+                leftValue = leftExpression.getText();
+            }
+            if (rightExpression instanceof ConstantExpression) {
+                Object value = ((ConstantExpression) rightExpression).getValue();
+                if (value != null) {
+                    rightValue = value.toString();
+                }
+            } else if (rightExpression instanceof GStringExpression) {
+                rightValue = rightExpression.getText();
+            }
+            if (leftValue.length() != 0 && rightValue.length() != 0) {
+                dependencyValue.put(leftValue, rightValue);
+            }
+            super.visitBinaryExpression(expression);
         }
 
         @Override
@@ -166,7 +268,13 @@ public class ParseUtil {
                             } else if (right instanceof MapExpression) {
                                 List<MapEntryExpression> expressions = ((MapExpression) right).getMapEntryExpressions();
                                 for (MapEntryExpression mapEntryExpression : expressions) {
-                                    leftValue = ((ConstantExpression) mapEntryExpression.getKeyExpression()).getValue().toString();
+                                    Expression tempExpression = mapEntryExpression.getKeyExpression();
+                                    if (tempExpression instanceof ConstantExpression) {
+                                        leftValue = ((ConstantExpression) tempExpression).getValue().toString();
+                                    } else if (tempExpression instanceof GStringExpression) {
+                                        leftValue = tempExpression.getText();
+                                    }
+
                                     rightValue = (mapEntryExpression.getValueExpression()).getText();
                                     //   L.l(leftValue, rightValue);
                                     dependencyValue.put(leftValue, rightValue);
@@ -181,46 +289,6 @@ public class ParseUtil {
             }
         }
 
-        /**
-         * 去除括号
-         *
-         * @param text
-         * @return
-         */
-        private String removeBracket(String text) {
-            //去除括号和头尾空格
-            return text.trim().substring(1, text.length() - 1);
-        }
-
-        /**
-         * 对dependency进行简单的处理
-         *
-         * @param dependency
-         * @return
-         */
-        private String simpleResolve(String dependency) {
-            String result = removeBracket(dependency);
-            //this.files(libs/butterknife-7.0.1.jar)
-            //this.project([path::swipemenu])
-            if (result.startsWith("this.")) {
-                result = result.substring("this.".length());
-            }
-            //  compile gradleApi()此类排除
-            if (result.matches("^[a-zA-z0-9]+\\(\\)$")) {
-                return null;
-            }
-
-            //compile fileTree([dir:libs, include:[*.jar]]) 此类排除
-            if (result.startsWith("fileTree")) {
-                return null;
-            }
-
-            //com.android.support.test.espresso:espresso-core:2.2.2, { -> ... }
-            if (result.endsWith("}")) {
-                result = result.split(",")[0];
-            }
-            return result;
-        }
 
         private boolean isDependencyKey(String methodAsString) {
             return Config.DEPENDENCY_TAG.contains(methodAsString.toLowerCase());
@@ -245,6 +313,75 @@ public class ParseUtil {
         public static Map<String, String> getDependencyValue() {
             return dependencyValue;
         }
+    }
+
+    /**
+     * 对dependency进行简单的处理
+     *
+     * @param dependency
+     * @return
+     */
+    private static String simpleResolve(String dependency) {
+        if (dependency.contains("mx4j")) {
+            int a = 1;
+        }
+        String result = removeBracket(dependency);//移除括号
+
+        result = removeAdd(result);//移除加号
+        //this.files(libs/butterknife-7.0.1.jar)
+        //this.project([path::swipemenu])
+        if (result.startsWith("this.")) {
+            result = result.substring("this.".length());
+        }
+        //  compile gradleApi()此类排除
+        if (result.matches("^[a-zA-z0-9]+\\(\\)$")) {
+            return null;
+        }
+
+        //compile fileTree([dir:libs, include:[*.jar]]) 此类排除
+        if (result.startsWith("fileTree")) {
+            return null;
+        }
+
+        //com.android.support.test.espresso:espresso-core:2.2.2, { -> ... }
+        if (result.endsWith("}")) {
+            //[group:com.facebook.presto, name:presto-client, version:prestoVersion], { -> ... }
+            result = result.split(", \\{ -> \\.\\.\\. \\}")[0];
+        }
+        return result;
+    }
+
+    /**
+     * 移除加号
+     *
+     * @param result
+     * @return
+     */
+    private static String removeAdd(String result) {
+        String[] temp = result.split("\\+");
+        if (temp.length <= 1) {
+            return result.trim();
+        } else {
+            result = "";
+            for (String s : temp) {
+                result += s.trim();
+            }
+            return result.trim();
+        }
+    }
+
+    /**
+     * 去除括号
+     *
+     * @param text
+     * @return
+     */
+    private static String removeBracket(String text) {
+        //去除括号和头尾空格
+        while (text.trim().startsWith("(") && text.trim().endsWith(")")) {
+            text = text.trim().substring(1, text.length() - 1);
+        }
+        return text;
     }
 }
 
