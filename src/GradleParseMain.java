@@ -1,4 +1,6 @@
 import bean.GradleFile;
+import bean.Index;
+import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import config.Config;
 import util.FileUtil;
@@ -14,10 +16,11 @@ public class GradleParseMain {
 
         String baseStarProjectPath = args[0];
         //1-index文件夹内的文件都已经全部解析完
-        final int MAX = 2;
+        final int MAX = 6;
         int index = getCurrentIndex();
 
         for (int i = index + 1; i < MAX; i++) {
+            String log = "";
             String projectPath = baseStarProjectPath + "//starproject" + String.valueOf(i);
             File[] tempFiles = new File(projectPath).listFiles();
             List<File> projectFiles = new ArrayList<>();
@@ -36,13 +39,12 @@ public class GradleParseMain {
             for (File projectFile : projectFiles) {
                 //projectFile指的每一个项目文件夹
                 L.l(projectFile.getAbsolutePath());
-                if (projectFile.getAbsolutePath().contains("D:\\starproject\\starproject1\\airbnb__fdse__epoxy"))
-                {
+                if (projectFile.getAbsolutePath().contains("D:\\starproject\\starproject1\\airbnb__fdse__epoxy")) {
                     int a = 1;
                 }
                 String test = "D:\\starProject\\starproject1\\airbnb__fdse__epoxy";
                 String path111 = projectFile.getAbsolutePath();
-                if (Config.UNSOLVED_PROJECT.contains(test)){
+                if (Config.UNSOLVED_PROJECT.contains(test)) {
                     int b = 1;
                 }
                 boolean equal = path111.equals(test);
@@ -72,14 +74,24 @@ public class GradleParseMain {
                 ParseUtil.clearDependencyValue();
                 List<String> dependencies = ParseUtil.getDependencies();
 
+                log = log + company + "  " + projectName + "\n" + projectFile.getAbsolutePath() + "\n";
                 L.l("============================");
                 Set<String> dependenciesSet = new HashSet<>(dependencies);
                 for (String s : dependenciesSet) {
                     L.l(s);
+                    log = log + s + "\n";
                 }
+                log = log + "\n" + "\n" + "\n";
                 L.l("============================");
+
                 ParseUtil.clearDependencies();
             }
+
+            L.l(log);
+            FileUtil.writeFlie("project" + String.valueOf(i) + ".txt", log);
+            String path = System.getProperty("user.dir");
+            FileUtil.writeFlie(path + "/src/index.json", new Gson().toJson(new Index(i)));
+
         }
 
     }
@@ -94,6 +106,7 @@ public class GradleParseMain {
         String indexStr = FileUtil.read(path + "/src/index.json");
         return new JsonParser().parse(indexStr).getAsJsonObject().get("index").getAsInt();
     }
+
 
     static class FileComparator implements Comparator<File> {
 
