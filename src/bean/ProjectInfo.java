@@ -13,24 +13,38 @@ public class ProjectInfo {
      * stars : 7320
      * url : https://github.com/JakeWharton/ActionBarSherlock
      */
-    private int commit_count;
-    private int fork;
-    private int sizes;
+    private long commit_count;
+    private long fork;
+    private long sizes;
     private String local_addr;
-    private int repository_id;
-    private int id;
-    private int stars;
+    private long repository_id;
+    private long id;
+    private long stars;
     private String url;
 
-    public void setCommit_count(int commit_count) {
+    public ProjectInfo(long commit_count, long fork, long sizes, String local_addr, long repository_id, long id, long stars, String url) {
+        this.commit_count = commit_count;
+        this.fork = fork;
+        this.sizes = sizes;
+        this.local_addr = local_addr;
+        this.repository_id = repository_id;
+        this.id = id;
+        this.stars = stars;
+        this.url = url;
+    }
+
+    public ProjectInfo() {
+    }
+
+    public void setCommit_count(long commit_count) {
         this.commit_count = commit_count;
     }
 
-    public void setFork(int fork) {
+    public void setFork(long fork) {
         this.fork = fork;
     }
 
-    public void setSizes(int sizes) {
+    public void setSizes(long sizes) {
         this.sizes = sizes;
     }
 
@@ -38,15 +52,15 @@ public class ProjectInfo {
         this.local_addr = local_addr;
     }
 
-    public void setRepository_id(int repository_id) {
+    public void setRepository_id(long repository_id) {
         this.repository_id = repository_id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
-    public void setStars(int stars) {
+    public void setStars(long stars) {
         this.stars = stars;
     }
 
@@ -54,15 +68,15 @@ public class ProjectInfo {
         this.url = url;
     }
 
-    public int getCommit_count() {
+    public long getCommit_count() {
         return commit_count;
     }
 
-    public int getFork() {
+    public long getFork() {
         return fork;
     }
 
-    public int getSizes() {
+    public long getSizes() {
         return sizes;
     }
 
@@ -70,15 +84,15 @@ public class ProjectInfo {
         return local_addr;
     }
 
-    public int getRepository_id() {
+    public long getRepository_id() {
         return repository_id;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public int getStars() {
+    public long getStars() {
         return stars;
     }
 

@@ -13,6 +13,12 @@ public class DependencyUrl {
     private String type;
     private String version;
 
+    public DependencyUrl(String groupId, String artifactId, String version) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.version = version;
+    }
+
     public void setGroupId(String groupId) {
         this.groupId = groupId;
     }

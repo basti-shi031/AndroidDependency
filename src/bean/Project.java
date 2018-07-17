@@ -1,13 +1,15 @@
 package bean;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Project {
 
     ProjectInfo projectInfo;
-    List<DependencyLibs> dependencyLibs;
+    List<DependencyLib> dependencyLibs;
     List<DependencyProject> dependencyProjects;
     List<DependencyUrl> dependencyUrls;
+
 
     public ProjectInfo getProjectInfo() {
         return projectInfo;
@@ -17,11 +19,11 @@ public class Project {
         this.projectInfo = projectInfo;
     }
 
-    public List<DependencyLibs> getDependencyLibs() {
+    public List<DependencyLib> getDependencyLibs() {
         return dependencyLibs;
     }
 
-    public void setDependencyLibs(List<DependencyLibs> dependencyLibs) {
+    public void setDependencyLibs(List<DependencyLib> dependencyLibs) {
         this.dependencyLibs = dependencyLibs;
     }
 
@@ -42,6 +44,9 @@ public class Project {
     }
 
     public Project() {
-
+        projectInfo = new ProjectInfo();
+        dependencyProjects = new ArrayList<>();
+        dependencyLibs = new ArrayList<>();
+        dependencyUrls = new ArrayList<>();
     }
 }
