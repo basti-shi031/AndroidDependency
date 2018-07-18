@@ -1,7 +1,6 @@
 import com.google.gson.Gson;
 import util.L;
 
-import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +12,7 @@ public class FIndStarProject {
         // 数据库的用户名与密码，需要根据自己的设置
         final String USER = "root";
         final String PASS = "root";
-        String baseStarProjectPath = args[0];
+/*        String baseStarProjectPath = args[0];
         final int MAX = 83;
         List<File> projectFiles = new ArrayList<>();
         for (int i = 1; i < MAX; i++) {
@@ -28,7 +27,7 @@ public class FIndStarProject {
         }
         List<String> projectName = new ArrayList<>();
         int size = projectFiles.size();
-        L.l(String.valueOf(size));
+        L.l(String.valueOf(size));*/
         Connection conn = null;
         Statement stmt = null;
         try {
@@ -45,8 +44,8 @@ public class FIndStarProject {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-        for (int i = 0; i < size; i++) {
+        List<String> projectName = new ArrayList<>();
+  /*      for (int i = 0; i < size; i++) {
             File file = projectFiles.get(i);
             L.l(file.getName());
             String[] name = file.getName().split("__fdse__");
@@ -55,26 +54,30 @@ public class FIndStarProject {
                 continue;
             }
             String company = name[0];
-            String project = name[1];
+            String project = name[1];*/
 
-            try {
-                stmt = conn.createStatement();
-                String sql;
-                String like = company + "/" + project;
-                sql = "SELECT stars, repos_addr FROM repository_high_quality where repos_addr like  '%" + like + "'";
-                L.l(sql);
-                ResultSet rs = stmt.executeQuery(sql);
-                while (rs.next()) {
-                    if (rs.getInt("stars") >= 1000) {
-                        projectName.add(rs.getString("repos_addr"));
-                    }
-                }
-                rs.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
+        try {
+            stmt = conn.createStatement();
+            String sql;
+            sql = "SELECT * FROM repository_high_quality where stars>=500";
+            L.l(sql);
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String url = rs.getString("url");
+                String[] urls = url.split("/");
+                int size = urls.length;
+                String company = urls[size - 2];
+                String project = urls[size - 1];
+
+                String path = "/home/fdse/data/prior_repository/" + company + "/" + project;
+                projectName.add(path);
             }
-
+            rs.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
+
+        // }
         L.l(String.valueOf(projectName.size()));
         String json = new Gson().toJson(projectName);
         L.l(json);

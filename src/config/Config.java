@@ -23,6 +23,8 @@ public class Config {
             "D:\\starproject\\starproject1\\apache__fdse__beam",
             "D:\\starproject\\starproject1\\airbnb__fdse__epoxy",
             "D:\\starproject\\starproject1\\apache__fdse__groovy",
-            "D:\\starproject\\starproject1\\airbnb__fdse__RxGroups "};
+            "D:\\starproject\\starproject1\\airbnb__fdse__RxGroups",
+            "D:\\starproject\\starproject23\\f2prateek__fdse__dart",
+            "D:\\starproject\\starproject27\\theDazzler__fdse__droidicon"};
     public static final List<String> UNSOLVED_PROJECT = Arrays.asList(UNSOLVED_PROJECT_RAW);
 }

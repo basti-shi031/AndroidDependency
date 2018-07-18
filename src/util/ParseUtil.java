@@ -23,7 +23,12 @@ public class ParseUtil {
         SourceUnit unit = SourceUnit.create("gradle", gradleString);
         unit.parse();
         unit.completePhase();
-        unit.convert();
+        try {
+            unit.convert();
+        } catch (Exception e) {
+            return;
+        }
+
         visitScriptCode(unit, new parseBuildGradle());
     }
 
@@ -66,6 +71,9 @@ public class ParseUtil {
         int index = 0;
         for (String dependency : dependencies) {
             //     L.l(dependency);
+            if (dependency == null) {
+                continue;
+            }
             if (dependency.contains("group:junit, name:junit, version:4.11")) {
                 int a = 1;
             }
@@ -76,7 +84,7 @@ public class ParseUtil {
                 //特殊处理 [Rajawali-Rajawali]
                 dependency = dependency.split("\\.")[1].trim();
                 dependencies.set(index, value.get(dependency));
-            } else if (dependency.startsWith("featureDependencies.") || dependency.startsWith("aptDependencies.") || dependency.startsWith("libs.")||dependency.startsWith("deps.")) {
+            } else if (dependency.startsWith("featureDependencies.") || dependency.startsWith("aptDependencies.") || dependency.startsWith("libs.") || dependency.startsWith("deps.")) {
                 //[Piasy-AndroidTDDBootStrap] featureDependencies.cardViewV7
                 dependency = value.get(dependency.split("\\.")[1].trim());//valueDependency = cardViewV7 stetho
                 if (dependency != null) {
@@ -85,15 +93,19 @@ public class ParseUtil {
             } else if (dependency.contains("$")) {
                 //$version
                 //$project.version
+                String[] tempFakeVersion = dependency.split("\\$");
+                if (tempFakeVersion.length <= 1) {
+                    continue;
+                }
                 String fakeVersion = dependency.split("\\$")[1].trim();
                 String tempVersion = fakeVersion;
-                if (tempVersion.contains(".")){
-                    if (fakeVersion.equals("versions.powermock")){
+                if (tempVersion.contains(".")) {
+                    if (fakeVersion.equals("versions.powermock")) {
                         int a = 1;
                     }
                     String[] temp = fakeVersion.split("\\.");
                     int size = temp.length;
-                    tempVersion = temp[size-1];
+                    tempVersion = temp[size - 1];
                 }
                 if (value.get(tempVersion) == null) {
                     continue;
@@ -105,12 +117,19 @@ public class ParseUtil {
             }
             if (dependency != null) {
                 if (dependency.startsWith("[") && dependency.endsWith("]")) {
+                    L.l(dependency);
+                    if (dependency.contains("group:com.android.support, name:appcompat-v7")) {
+                        int a = 1;
+                    }
                     //[group:io.dropwizard, name:dropwizard-jdbi, version:1.0.0-rc2]
                     dependency = dependency.substring(1, dependency.length() - 1);
                     String splitGroups[] = dependency.split(",");
                     Map<String, String> maps = new HashMap<>();
                     for (String splitGroup : splitGroups) {
                         String[] keyValue = splitGroup.trim().split(":");
+                        if (keyValue.length <= 1) {
+                            continue;
+                        }
                         maps.put(keyValue[0], keyValue[1]);
                     }
                     //拼接成com.google.android.support:wearable:1.3.0
@@ -150,7 +169,7 @@ public class ParseUtil {
             }
 
 
-            if (dependency!=null&&getVersion(dependency) != null && getVersion(dependency).startsWith("project.")) {
+            if (dependency != null && getVersion(dependency) != null && getVersion(dependency).startsWith("project.")) {
                 //org.springframework.security:spring-security-config:project.spring-security.version
                 String[] versionTemp = dependency.split("project\\.");
                 String fakeVersion = versionTemp[versionTemp.length - 1];
@@ -216,7 +235,7 @@ public class ParseUtil {
             }
             if (valueExpression instanceof ConstantExpression) {
                 rightValue = valueExpression.getText();
-            }else if (valueExpression instanceof GStringExpression){
+            } else if (valueExpression instanceof GStringExpression) {
                 rightValue = valueExpression.getText();
             }
             if (leftValue.length() != 0 && rightValue.length() != 0) {

@@ -82,6 +82,9 @@ public class GradleParseMain {
                 DependencyLib dependencyLib;
                 DependencyUrl dependencyUrl;
                 for (String s : dependenciesSet) {
+                    if (s == null){
+                        continue;
+                    }
                     L.l(s);
                     log = log + s + "\n";
                     if (s.startsWith("project(")) {
@@ -112,7 +115,7 @@ public class GradleParseMain {
                 if (!new File(newFilePath).exists()) {
                     new File(newFilePath).mkdirs();
                 }
-                FileUtil.writeFlie("D://gradleProject//starproject" + String.valueOf(i) + "//" + projectFile.getName(), new Gson().toJson(project));
+                FileUtil.writeFlie("D://gradleProject//starproject" + String.valueOf(i) + "//" + projectFile.getName()+".txt", new Gson().toJson(project));
                 ParseUtil.clearDependencies();
             }
 
