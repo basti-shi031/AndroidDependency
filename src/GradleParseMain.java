@@ -16,7 +16,7 @@ public class GradleParseMain {
         String baseStarProjectPath = args[0];
         //1-index文件夹内的文件都已经全部解析完
         DBUtil.init();
-        final int MAX = 83;
+        final int MAX = 10;
         int index = getCurrentIndex();
         Project project;
         for (int i = index + 1; i < MAX; i++) {

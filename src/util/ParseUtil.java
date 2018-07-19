@@ -71,6 +71,9 @@ public class ParseUtil {
         int index = 0;
         for (String dependency : dependencies) {
             //     L.l(dependency);
+            if (dependency.contains("depJacksonMapper")){
+                int a =1;
+            }
             if (dependency == null) {
                 continue;
             }
@@ -83,8 +86,15 @@ public class ParseUtil {
             } else if (dependency.startsWith("project.")) {
                 //特殊处理 [Rajawali-Rajawali]
                 dependency = dependency.split("\\.")[1].trim();
-                dependencies.set(index, value.get(dependency));
-            } else if (dependency.startsWith("featureDependencies.") || dependency.startsWith("aptDependencies.") || dependency.startsWith("libs.") || dependency.startsWith("deps.")) {
+                if (value.get(dependency)!=null){
+                    dependency = value.get(dependency);
+                    dependencies.set(index,dependency);
+                }
+
+            } else if (dependency.startsWith("featureDependencies.") || dependency.startsWith("aptDependencies.")
+                    || dependency.startsWith("libs.") || dependency.startsWith("deps.")
+                    || dependency.startsWith("libraries.")||dependency.startsWith("supportLib.")
+                    || dependency.startsWith("archLib.")||dependency.startsWith("widgets.")) {
                 //[Piasy-AndroidTDDBootStrap] featureDependencies.cardViewV7
                 dependency = value.get(dependency.split("\\.")[1].trim());//valueDependency = cardViewV7 stetho
                 if (dependency != null) {
@@ -179,6 +189,23 @@ public class ParseUtil {
                 }
             }
 
+            if (dependency == null){
+                continue;
+            }
+            if (dependency.contains("com.linkedin.gobblin:gobblin-data-management:0.11.")){
+                int a =1;
+            }
+            if (dependency.contains(",")){
+                dependency = dependency.split(",")[0].trim();
+                dependencies.set(index,dependency);
+            }
+
+
+                if (value.get(dependency)!=null){
+                dependency = value.get(dependency);
+                dependencies.set(index,dependency);
+            }
+
             index++;
         }
 
@@ -222,6 +249,7 @@ public class ParseUtil {
         static Set<String> methodSet = new HashSet<>();
         static List<String> dependencies = new ArrayList<>();//存放依赖
         static Map<String, String> dependencyValue = new HashMap();//存放键值对，用于替换
+
 
         @Override
         public void visitMapEntryExpression(MapEntryExpression expression) {
@@ -298,8 +326,28 @@ public class ParseUtil {
         @Override
         public void visitArgumentlistExpression(ArgumentListExpression ale) {
             int size = ale.getExpressions().size();
+            L.l("====",path1);
             // L.l(String.valueOf(size));
-            if (size >= 1) {
+            if (size >= 2) {
+                if (path1.contains("Rajawali")){
+                    int a = 1;
+                }
+                    if (ale.getExpressions() instanceof LinkedList) {
+                    Expression key = ale.getExpression(0);
+                    Expression value = ale.getExpression(1);
+                    String leftValue = "";
+                    String rightValue = "";
+                    if (key instanceof ConstantExpression) {
+                        leftValue = key.getText();
+                    }
+                    if (value instanceof ConstantExpression) {
+                        rightValue = value.getText();
+                    }
+                    if (leftValue.length() != 0 && rightValue.length() != 0) {
+                        dependencyValue.put(leftValue, rightValue);
+                    }
+                }
+            } else if (size >= 1) {
                 if (ale.getExpression(0) instanceof ClosureExpression) {
                     List<Statement> statements = ((BlockStatement) ((ClosureExpression) ale.getExpression(0)).getCode()).getStatements();
                     for (Statement statement : statements) {
