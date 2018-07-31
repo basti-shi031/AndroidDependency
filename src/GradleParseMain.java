@@ -16,7 +16,7 @@ public class GradleParseMain {
         String baseStarProjectPath = args[0];
         //1-index文件夹内的文件都已经全部解析完
         DBUtil.init();
-        final int MAX = 10;
+        final int MAX = 21;
         int index = getCurrentIndex();
         Project project;
         for (int i = index + 1; i < MAX; i++) {
@@ -82,7 +82,7 @@ public class GradleParseMain {
                 DependencyLib dependencyLib;
                 DependencyUrl dependencyUrl;
                 for (String s : dependenciesSet) {
-                    if (s == null){
+                    if (s == null) {
                         continue;
                     }
                     L.l(s);
@@ -97,7 +97,7 @@ public class GradleParseMain {
                         project.getDependencyLibs().add(dependencyLib);
                     } else {
                         //uk.co.chrisjenx:calligraphy:2.2.0
-                        if (s.contains(";")) {
+                        if (s.contains(":")) {
                             String[] tempDependencies = s.split(":");
                             if (tempDependencies.length >= 3) {
                                 String group = tempDependencies[0];
@@ -115,7 +115,7 @@ public class GradleParseMain {
                 if (!new File(newFilePath).exists()) {
                     new File(newFilePath).mkdirs();
                 }
-                FileUtil.writeFlie("D://gradleProject//starproject" + String.valueOf(i) + "//" + projectFile.getName()+".txt", new Gson().toJson(project));
+                FileUtil.writeFlie("D://gradleProject//starproject" + String.valueOf(i) + "//" + projectFile.getName() + ".txt", new Gson().toJson(project));
                 ParseUtil.clearDependencies();
             }
 

@@ -8,113 +8,43 @@ import org.codehaus.groovy.classgen.BytecodeExpression;
 import org.codehaus.groovy.control.SourceUnit;
 import util.L;
 
+import java.util.List;
+
 public class Parse {
     public static void main(String args[]) {
-        String source ="allprojects {\n" +
-                "    // Top-level build file where you can add configuration options common to all sub-projects/modules.\n" +
-                "    ext {\n" +
-                "        // Author\n" +
-                "        developerId = \"davideas\"\n" +
-                "        developerName = \"Davide Steduto\"\n" +
-                "        developerEmail = \"dave.dna@gmail.com\"\n" +
-                "\n" +
-                "        // Library Repository\n" +
-                "        libraryName = \"FlexibleAdapter\"\n" +
-                "        bintrayRepo = \"maven\"\n" +
-                "        packageExt = \"aar\"\n" +
-                "        siteUrl = \"https://github.com/davideas/FlexibleAdapter\"\n" +
-                "        gitUrl = \"https://github.com/davideas/FlexibleAdapter.git\"\n" +
-                "\n" +
-                "        // SDK and Build tools version\n" +
-                "        minSdk = 14\n" +
-                "        targetSdk = 27\n" +
-                "        buildTools = \"27.0.3\"\n" +
-                "\n" +
-                "        // Android Architecture Components\n" +
-                "        archLifecycleVer = \"1.1.1\"\n" +
-                "        archExtensionsVer = \"1.1.1\"\n" +
-                "        roomPersistenceVer = \"1.1.0-beta2\"\n" +
-                "        archLib = [\n" +
-                "                lifecycle      : \"android.arch.lifecycle:runtime:${archLifecycleVer}\",\n" +
-                "                extensions     : \"android.arch.lifecycle:extensions:${archExtensionsVer}\",\n" +
-                "                compiler       : \"android.arch.lifecycle:compiler:${archExtensionsVer}\",\n" +
-                "                commonJava8    : \"android.arch.lifecycle:common-java8:${archExtensionsVer}\",\n" +
-                "                reactiveStreams: \"android.arch.lifecycle:reactivestreams:${archExtensionsVer}\",\n" +
-                "                coreTesting    : \"android.arch.core:core-testing:${archExtensionsVer}\",\n" +
-                "                room           : \"android.arch.persistence.room:runtime:${roomPersistenceVer}\",\n" +
-                "                roomCompiler   : \"android.arch.persistence.room:compiler:${roomPersistenceVer}\",\n" +
-                "                roomRxJava2    : \"android.arch.persistence.room:rxjava2:${roomPersistenceVer}\"\n" +
-                "        ]\n" +
-                "\n" +
-                "        // Support Libraries dependencies\n" +
-                "        supportVer = \"27.1.1\"\n" +
-                "        constraintVer = \"1.1.0\"\n" +
-                "        supportLib = [\n" +
-                "                design          : \"com.android.support:design:${supportVer}\",\n" +
-                "                recyclerView    : \"com.android.support:recyclerview-v7:${supportVer}\",\n" +
-                "                cardView        : \"com.android.support:cardview-v7:${supportVer}\",\n" +
-                "                appCompat       : \"com.android.support:appcompat-v7:${supportVer}\",\n" +
-                "                customTabs      : \"com.android.support:customtabs:${supportVer}\",\n" +
-                "                support_v4      : \"com.android.support:support-v4:${supportVer}\",\n" +
-                "                support_v13     : \"com.android.support:support-v13:${supportVer}\",\n" +
-                "                annotations     : \"com.android.support:support-annotations:${supportVer}\",\n" +
-                "                vectorDrawable  : \"com.android.support:support-vector-drawable:${supportVer}\",\n" +
-                "                preference_v7   : \"com.android.support:preference-v7:${supportVer}\",\n" +
-                "                preference_v14  : \"com.android.support:preference-v14:${supportVer}\",\n" +
-                "                constraintLayout: \"com.android.support.constraint:constraint-layout:${constraintVer}\",\n" +
-                "        ]\n" +
-                "\n" +
-                "        // Widgets\n" +
-                "        flipViewVer = \"1.1.3@aar\"\n" +
-                "        iconicsVer = \"3.0.3@aar\"\n" +
-                "        iconicsCmdVer = \"2.0.46.1@aar\"\n" +
-                "        widgets = [\n" +
-                "                flipView        : \"eu.davidea:flipview:${flipViewVer}\",\n" +
-                "                iconicsCore     : \"com.mikepenz:iconics-core:${iconicsVer}\",\n" +
-                "                iconicsViews    : \"com.mikepenz:iconics-views:${iconicsVer}\",\n" +
-                "                iconicsCommunity: \"com.mikepenz:community-material-typeface:${iconicsCmdVer}\",\n" +
-                "        ]\n" +
-                "\n" +
-                "        // 3rd Libraries\n" +
-                "        butterKnifeVer = \"8.8.1\"\n" +
-                "        timberVer = \"4.7.0\"\n" +
-                "        glideVer = \"4.6.1\"\n" +
-                "        javaxInjectVer = \"1\"\n" +
-                "        junitPlatformVer = \"1.1.0\"\n" +
-                "        junitJupiterVer = \"5.1.0\"\n" +
-                "        libraries = [\n" +
-                "                butterKnife        : \"com.jakewharton:butterknife:${butterKnifeVer}\",\n" +
-                "                butterKnifeCompiler: \"com.jakewharton:butterknife-compiler:${butterKnifeVer}\",\n" +
-                "                timber             : \"com.jakewharton.timber:timber:${timberVer}\",\n" +
-                "                glide              : \"com.github.bumptech.glide:glide:${glideVer}\",\n" +
-                "                glideCompiler      : \"com.github.bumptech.glide:compiler:${glideVer}\",\n" +
-                "                javaxInject        : \"javax.inject:javax.inject:${javaxInjectVer}\",\n" +
-                "        ]\n" +
-                "\n" +
-                "        // License stuff\n" +
-                "        licenseName = \"The Apache Software License, Version 2.0\"\n" +
-                "        licenseUrl = \"http://www.apache.org/licenses/LICENSE-2.0.txt\"\n" +
-                "        licenseDist = \"repo\"\n" +
-                "        allLicenses = [\"Apache-2.0\"]\n" +
-                "    }\n" +
-                "\n" +
-                "    repositories {\n" +
-                "        jcenter()\n" +
-                "        google()\n" +
-                "        maven { url \"http://dl.bintray.com/davideas/maven\" }\n" +
-                "        maven { url \"https://oss.sonatype.org/content/repositories/snapshots/\" }\n" +
-                "    }\n" +
-                "\n" +
-                "    tasks.withType(Javadoc) {\n" +
-                "        options.addStringOption('Xdoclint:none', '-quiet')\n" +
-                "        options.addStringOption('encoding', 'UTF-8')\n" +
-                "    }\n" +
-                "}\n";
-        SourceUnit unit = SourceUnit.create("gradle", source);
-        unit.parse();
-        unit.completePhase();
-        unit.convert();
-        visitScriptCode(unit, new parseBuildGradle());
+        try {
+//             String source = FileUtil.read("D:\\cs\\projects_last\\gradle500\\VaughnVernon__fdse__IDDD_Samples\\build.gradle ");
+/*            String source = "dependencies {\n" +
+                    "    compile depends.antlr_runtime,\n" +
+                    "            depends.stringtemplate,\n" +
+                    "            depends.jcommander,\n" +
+                    "            depends.mockito,\n" +
+                    "            depends.guava,\n" +
+                    "            depends.findbugs,\n" +
+                    "            depends.ST4\n" +
+                    "\n" +
+                    "    dx    depends.dx\n" +
+                    "\n" +
+                    "    accessorTestGenerator project('accessorTestGenerator')\n" +
+                    "}";*/
+String source = "dependencies {\n" +
+        "    compile 'com.google.guava:guava:[10.+,)'\n" +
+        "    compile 'com.google.code.findbugs:jsr305:2.0.2'\n" +
+        "\n" +
+        "    // junit testing\n" +
+        "    testCompile 'junit:junit:4.11'\n" +
+        "    testCompile 'org.mockito:mockito-all:1.9.5'\n" +
+        "}";
+            SourceUnit unit = SourceUnit.create("gradle", source);
+            unit.parse();
+            unit.completePhase();
+            unit.convert();
+            visitScriptCode(unit, new parseBuildGradle());
+        } catch (Exception e) {
+            L.l("123");
+            e.printStackTrace();
+        }
+
     }
 
 
@@ -134,7 +64,37 @@ public class Parse {
     static class parseBuildGradle extends CodeVisitorSupport {
         @Override
         public void visitBlockStatement(BlockStatement block) {
-            L.l("visitBlockStatement");
+        /*    L.l("visitBlockStatement");
+            List<Statement> statements = block.getStatements();
+            for (Statement statement : statements) {
+                if (statement instanceof ExpressionStatement) {
+                    Expression expression = ((ExpressionStatement) statement).getExpression();
+                    if (expression instanceof MethodCallExpression) {
+                        if (isDependencyKey(((MethodCallExpression) expression).getMethodAsString())) {
+                            L.l("dependency:",((MethodCallExpression) expression).getArguments().getText());
+                        }
+                    }
+                }
+            }
+            super.visitBlockStatement(block);*/
+            L.l("-+-+");
+            List<Statement> statements = block.getStatements();
+            for (Statement statement : statements) {
+                if (statement instanceof ExpressionStatement) {
+                    Expression expression = ((ExpressionStatement) statement).getExpression();
+                    if (expression instanceof MethodCallExpression) {
+                        if (isDependencyKey(((MethodCallExpression) expression).getMethodAsString())) {
+                            List<Expression> expressions = ((ArgumentListExpression) ((MethodCallExpression) expression).getArguments()).getExpressions();
+                            for (Expression e : expressions) {
+                                if (e instanceof PropertyExpression) {
+                                    L.l("property",((PropertyExpression) e).getPropertyAsString());
+                                }
+                            }
+                            L.l("dependency:", ((MethodCallExpression) expression).getArguments().getText());
+                        }
+                    }
+                }
+            }
             super.visitBlockStatement(block);
         }
 
@@ -165,6 +125,10 @@ public class Parse {
         @Override
         public void visitExpressionStatement(ExpressionStatement statement) {
             L.l("visitExpressionStatement");
+            Expression expression = statement.getExpression();
+            if (expression instanceof MethodCallExpression) {
+                ((MethodCallExpression) statement.getExpression()).getMethodAsString();
+            }
             super.visitExpressionStatement(statement);
         }
 
@@ -249,13 +213,13 @@ public class Parse {
             String rightValue = "";
             if (leftExpression instanceof PropertyExpression) {
                 leftValue = ((PropertyExpression) leftExpression).getProperty().getText();
-            }else if (leftExpression instanceof VariableExpression){
+            } else if (leftExpression instanceof VariableExpression) {
                 leftValue = leftExpression.getText();
             }
             if (rightExpression instanceof ConstantExpression) {
                 rightValue = ((ConstantExpression) rightExpression).getValue().toString();
             }
-            L.l(leftValue,rightValue);
+            L.l(leftValue, rightValue);
             super.visitBinaryExpression(expression);
         }
 
@@ -452,7 +416,7 @@ public class Parse {
             ConstantExpression method = (ConstantExpression) call.getMethod();
             L.l(method.getValue().toString());
             L.l(call.getMethodAsString());
-            L.l(call.getArguments().getText());
+            L.l("===", call.getArguments().getText());
             super.visitMethodCallExpression(call);
         }
 
@@ -490,7 +454,9 @@ public class Parse {
         }
     }
 
-
+    private boolean isDependencyKey(String methodAsString) {
+        return Config.DEPENDENCY_TAG.contains(methodAsString.toLowerCase());
+    }
 }
 
 

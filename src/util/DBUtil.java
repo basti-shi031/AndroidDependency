@@ -59,4 +59,13 @@ public class DBUtil {
         return null;
     }
 
+    public static void close() {
+        try {
+            stmt.close();
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

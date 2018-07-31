@@ -10,8 +10,7 @@ import org.codehaus.groovy.ast.stmt.ExpressionStatement;
 import org.codehaus.groovy.ast.stmt.Statement;
 import org.codehaus.groovy.control.SourceUnit;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class ParseUtil {
@@ -45,15 +44,26 @@ public class ParseUtil {
 
     public static void parseProperties(String path) {
         path1 = path;
-        Properties properties = new Properties();
+
+        L.l("path1", path1);
         try {
-            properties.load(new FileInputStream(path));
-            Iterator it = properties.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry entry = (Map.Entry) it.next();
-                Object key = entry.getKey();
-                Object value = entry.getValue();
-                getDependencyValue().put(key.toString(), value.toString());
+            String temp[] = path.split("\\.properties");
+            int size = temp.length;
+            copy(path, temp[0] + "_2" + ".properties");
+            path1 = temp[0] + "_2" + ".properties";
+            Properties properties = new Properties();
+            try {
+                properties.load(new FileInputStream(path1));
+                Iterator it = properties.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry entry = (Map.Entry) it.next();
+                    Object key = entry.getKey();
+                    Object value = entry.getValue();
+                    getDependencyValue().put(key.toString(), value.toString());
+                }
+            } catch (IOException e) {
+                L.l(path);
+                e.printStackTrace();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -68,69 +78,98 @@ public class ParseUtil {
     public static void replaceDependencyValue() {
         List<String> dependencies = getDependencies();
         Map<String, String> value = getDependencyValue();
-        int index = 0;
+        int index = -1;
         for (String dependency : dependencies) {
-            //     L.l(dependency);
-            if (dependency.contains("depJacksonMapper")){
-                int a =1;
+            if (dependency.contains("org.springframework.cloud:spring-cloud-starter-eureka-server")) {
+                int a = 1;
             }
+            //     L.l(dependency);
+            index++;
+
+            if (dependency.contains(", ") && dependency.split(", ").length == 2) {
+                dependency = dependency.split(", ")[0].trim();
+                dependencies.set(index, dependency);
+            }
+
             if (dependency == null) {
                 continue;
             }
-            if (dependency.contains("group:junit, name:junit, version:4.11")) {
+            // L.l("////", dependency);
+            if (dependency.contains("org.springframework:spring-test")) {
                 int a = 1;
             }
+//            compile "org.springframework:spring-core:${springVersion}", optional
+            if (dependency.contains("\",")) {
+                dependency = dependency.split(",")[0].trim();
+                dependencies.set(index, dependency);
+            }
+            if (dependency.contains("$antlr4Version")) {
+
+            }
+            if (dependency.contains(": + ")) {
+                //((com.fasterxml.jackson.core:jackson-databind: + jacksonVersion))
+                dependency = dependency.replaceAll(" + ", "&");
+            }
+
             if (dependency.contains("()")) {
                 //files(org.gradle.internal.jvm.Jvm.current().getToolsJar())
                 dependencies.set(index, "");
-            } else if (dependency.startsWith("project.")) {
+            }
+            if (dependency.startsWith("project.")) {
                 //特殊处理 [Rajawali-Rajawali]
                 dependency = dependency.split("\\.")[1].trim();
-                if (value.get(dependency)!=null){
+                if (value.get(dependency) != null) {
                     dependency = value.get(dependency);
-                    dependencies.set(index,dependency);
+                    dependencies.set(index, dependency);
                 }
 
-            } else if (dependency.startsWith("featureDependencies.") || dependency.startsWith("aptDependencies.")
+            }
+            if (dependency.startsWith("featureDependencies.") || dependency.startsWith("aptDependencies.")
                     || dependency.startsWith("libs.") || dependency.startsWith("deps.")
-                    || dependency.startsWith("libraries.")||dependency.startsWith("supportLib.")
-                    || dependency.startsWith("archLib.")||dependency.startsWith("widgets.")) {
+                    || dependency.startsWith("libraries.") || dependency.startsWith("supportLib.")
+                    || dependency.startsWith("archLib.") || dependency.startsWith("widgets.")
+                    || dependency.startsWith("externalDependency.") || dependency.startsWith("lib.")
+                    || dependency.startsWith("libs.") || dependency.startsWith("depends.")) {
                 //[Piasy-AndroidTDDBootStrap] featureDependencies.cardViewV7
                 dependency = value.get(dependency.split("\\.")[1].trim());//valueDependency = cardViewV7 stetho
                 if (dependency != null) {
                     dependencies.set(index, dependency);
                 }
-            } else if (dependency.contains("$")) {
-                //$version
-                //$project.version
-                String[] tempFakeVersion = dependency.split("\\$");
-                if (tempFakeVersion.length <= 1) {
-                    continue;
-                }
-                String fakeVersion = dependency.split("\\$")[1].trim();
-                String tempVersion = fakeVersion;
-                if (tempVersion.contains(".")) {
-                    if (fakeVersion.equals("versions.powermock")) {
-                        int a = 1;
+            }
+            if (dependency == null) {
+                continue;
+            }
+            if (!dependency.startsWith("[")) {
+                if (dependency.split(":").length >= 3) {
+                    //com.fasterxml.jackson.core:jackson-databind:jacksonVersion
+                    String[] temps = dependency.split(":");
+                    int tempIndex = 0;
+                    for (String temp : temps) {
+                        boolean shouldReplace = false;
+                        String fakeVersionKey = dependency.split(":")[tempIndex].trim();
+                        if (fakeVersionKey.startsWith("$")) {
+                            shouldReplace = true;
+                            fakeVersionKey = fakeVersionKey.substring(1);
+                        } else if (fakeVersionKey.contains("$") || tempIndex == 2) {
+                            shouldReplace = true;
+                            fakeVersionKey = fakeVersionKey.substring(fakeVersionKey.indexOf("$") + 1);
+                        }
+                        if (shouldReplace && value.get(fakeVersionKey) != null) {
+                            String fakeVersion = value.get(fakeVersionKey);
+                            dependency = dependency.replace("$" + fakeVersionKey, fakeVersion);
+                            dependency = dependency.replace(fakeVersionKey, fakeVersion);
+                            dependencies.set(index, dependency);
+                        }
+                        tempIndex++;
                     }
-                    String[] temp = fakeVersion.split("\\.");
-                    int size = temp.length;
-                    tempVersion = temp[size - 1];
                 }
-                if (value.get(tempVersion) == null) {
-                    continue;
-                }
-                dependency = dependency.replace("$" + fakeVersion, value.get(tempVersion));
-                dependencies.set(index, dependency);
-            } else if (dependency.startsWith("group:") || dependency.startsWith("name:")) {
+            }
+            if (dependency.startsWith("group:") || dependency.startsWith("name:")) {
                 dependency = "[" + dependency + "]";
             }
             if (dependency != null) {
                 if (dependency.startsWith("[") && dependency.endsWith("]")) {
                     L.l(dependency);
-                    if (dependency.contains("group:com.android.support, name:appcompat-v7")) {
-                        int a = 1;
-                    }
                     //[group:io.dropwizard, name:dropwizard-jdbi, version:1.0.0-rc2]
                     dependency = dependency.substring(1, dependency.length() - 1);
                     String splitGroups[] = dependency.split(",");
@@ -146,6 +185,9 @@ public class ParseUtil {
                     String groupName = maps.get("group");
                     String moduleName = maps.get("name");
                     String version = maps.get("version");
+                    if (value.get(version) != null) {
+                        version = value.get(version);
+                    }
                     dependency = "";
                     if (groupName != null) {
                         dependency = groupName + ":";
@@ -160,7 +202,27 @@ public class ParseUtil {
                         dependency = dependency.substring(0, dependency.length() - 1);
                     }
                     dependencies.set(index, dependency);
-                } else if (dependency.startsWith("rootProject") || dependency.startsWith("rootproject")) {
+                }
+                if (dependency.contains("$")) {
+                    //$version
+                    //$project.version
+                    String[] tempFakeVersion = dependency.split("\\$");
+                    if (tempFakeVersion.length <= 1) {
+                        continue;
+                    }
+                    String fakeVersion = dependency.split("\\$")[1].trim();
+                    String tempVersion = fakeVersion;
+                    if (tempVersion.contains(".")) {
+                        String[] temp = fakeVersion.split("\\.");
+                        int size = temp.length;
+                        tempVersion = temp[size - 1];
+                    }
+                    if (value.get(tempVersion) != null) {
+                        dependency = dependency.replace("$" + fakeVersion, value.get(tempVersion));
+                        dependencies.set(index, dependency);
+                    }
+                }
+                if (dependency.startsWith("rootProject") || dependency.startsWith("rootproject")) {
                     String[] tempDependencies = dependency.split("\\.");
                     if (tempDependencies.length >= 1) {
                         dependency = tempDependencies[tempDependencies.length - 1];
@@ -179,34 +241,34 @@ public class ParseUtil {
             }
 
 
-            if (dependency != null && getVersion(dependency) != null && getVersion(dependency).startsWith("project.")) {
+            if (dependency != null && getVersion(dependency) != null &&
+                    (getVersion(dependency).startsWith("project.") ||
+                            getVersion(dependency).startsWith("parent.") ||
+                            getVersion(dependency).startsWith("identityParent.") ||
+                            getVersion(dependency).startsWith("versions."))) {
                 //org.springframework.security:spring-security-config:project.spring-security.version
-                String[] versionTemp = dependency.split("project\\.");
+                String[] versionTemp = getVersion(dependency).split("\\.");
                 String fakeVersion = versionTemp[versionTemp.length - 1];
                 if (value.get(fakeVersion.trim()) != null) {
-                    dependency = dependency.replace("project." + fakeVersion, value.get(fakeVersion.trim()));
+                    dependency = dependency.replace(getVersion(dependency), value.get(fakeVersion.trim()));
                     dependencies.set(index, dependency);
                 }
             }
 
-            if (dependency == null){
+            if (dependency == null) {
                 continue;
             }
-            if (dependency.contains("com.linkedin.gobblin:gobblin-data-management:0.11.")){
-                int a =1;
-            }
-            if (dependency.contains(",")){
-                dependency = dependency.split(",")[0].trim();
-                dependencies.set(index,dependency);
-            }
 
 
-                if (value.get(dependency)!=null){
+            if (value.get(dependency) != null) {
                 dependency = value.get(dependency);
-                dependencies.set(index,dependency);
+                dependencies.set(index, dependency);
             }
 
-            index++;
+            if (dependency.startsWith("(")) {
+                dependency = dependency.substring(1);
+                dependencies.set(index, dependency);
+            }
         }
 
     }
@@ -260,6 +322,9 @@ public class ParseUtil {
             String rightValue = "";
             if (keyExpression instanceof ConstantExpression) {
                 leftValue = keyExpression.getText();
+                if (leftValue.contains("antlr")) {
+                    int a = 1;
+                }
             }
             if (valueExpression instanceof ConstantExpression) {
                 rightValue = valueExpression.getText();
@@ -276,7 +341,7 @@ public class ParseUtil {
             //My code
 
             String method = call.getMethodAsString();
-            if (method != null) {
+           /* if (method != null) {
                 if (isDependencyKey(call.getMethodAsString())) {
 
                     Expression expression = call.getArguments();
@@ -286,16 +351,54 @@ public class ParseUtil {
                         return;
                     }
                     dependencies.add(dependency);
-                } else if (call.getMethodAsString().equals("set")) {
+                } else */
+            if (call != null && call.getMethodAsString() != null) {
+                if (call.getMethodAsString().equals("set")) {
                     String text = call.getArguments().getText();
                     //(depAppCompat, com.android.support:appcompat-v7:23.2.0)
                     //去除括号
+                    L.l(text);
                     text = removeBracket(text);
-                    dependencyValue.put(text.split(",")[0].trim(), text.split(",")[1].trim());
+                    if (text.split(",").length >= 2) {
+                        dependencyValue.put(text.split(",")[0].trim(), text.split(",")[1].trim());
+                    }
+
                 }
                 methodSet.add(call.getMethodAsString());
-                super.visitMethodCallExpression(call);
             }
+            super.visitMethodCallExpression(call);
+            // }
+        }
+
+        @Override
+        public void visitBlockStatement(BlockStatement block) {
+            List<Statement> statements = block.getStatements();
+            for (Statement statement : statements) {
+                if (statement instanceof ExpressionStatement) {
+                    Expression expression = ((ExpressionStatement) statement).getExpression();
+                    if (expression instanceof MethodCallExpression) {
+                        if (isDependencyKey(((MethodCallExpression) expression).getMethodAsString())) {
+//                            L.l("dependency:",((MethodCallExpression) expression).getArguments().getText());
+                            Expression arguements = ((MethodCallExpression) expression).getArguments();
+                            if (arguements instanceof ArgumentListExpression) {
+                                List<Expression> expressions = ((ArgumentListExpression) arguements).getExpressions();
+                                for (Expression e : expressions) {
+                                    if (e instanceof PropertyExpression) {
+                                        L.l("property", ((PropertyExpression) e).getPropertyAsString());
+                                        dependencies.add(((PropertyExpression) e).getPropertyAsString());
+                                    } else {
+                                        dependencies.add(e.getText());
+                                    }
+                                }
+                            } else if (arguements instanceof TupleExpression) {
+                                dependencies.add(((MethodCallExpression) expression).getArguments().getText());
+                            }
+
+                        }
+                    }
+                }
+            }
+            super.visitBlockStatement(block);
         }
 
         @Override
@@ -309,12 +412,20 @@ public class ParseUtil {
             } else if (leftExpression instanceof VariableExpression) {
                 leftValue = leftExpression.getText();
             }
+            if (leftValue.contains("sparkVersion")) {
+                int a = 1;
+            }
             if (rightExpression instanceof ConstantExpression) {
                 Object value = ((ConstantExpression) rightExpression).getValue();
                 if (value != null) {
+                    if (value.toString().contains("4.1.22.Final")) {
+                        int a = 1;
+                    }
                     rightValue = value.toString();
                 }
             } else if (rightExpression instanceof GStringExpression) {
+                rightValue = rightExpression.getText();
+            } else if (rightExpression instanceof VariableExpression) {
                 rightValue = rightExpression.getText();
             }
             if (leftValue.length() != 0 && rightValue.length() != 0) {
@@ -326,13 +437,10 @@ public class ParseUtil {
         @Override
         public void visitArgumentlistExpression(ArgumentListExpression ale) {
             int size = ale.getExpressions().size();
-            L.l("====",path1);
+            L.l("====", path1);
             // L.l(String.valueOf(size));
             if (size >= 2) {
-                if (path1.contains("Rajawali")){
-                    int a = 1;
-                }
-                    if (ale.getExpressions() instanceof LinkedList) {
+                if (ale.getExpressions() instanceof LinkedList) {
                     Expression key = ale.getExpression(0);
                     Expression value = ale.getExpression(1);
                     String leftValue = "";
@@ -382,12 +490,15 @@ public class ParseUtil {
                 } else if (ale.getExpression(0) instanceof PropertyExpression) {
 
                 }
-                super.visitArgumentlistExpression(ale);
             }
+            super.visitArgumentlistExpression(ale);
         }
 
 
         private boolean isDependencyKey(String methodAsString) {
+            if (methodAsString == null) {
+                return false;
+            }
             return Config.DEPENDENCY_TAG.contains(methodAsString.toLowerCase());
         }
 
@@ -419,9 +530,6 @@ public class ParseUtil {
      * @return
      */
     private static String simpleResolve(String dependency) {
-        if (dependency.contains("mx4j")) {
-            int a = 1;
-        }
         String result = removeBracket(dependency);//移除括号
 
         result = removeAdd(result);//移除加号
@@ -480,5 +588,25 @@ public class ParseUtil {
         }
         return text;
     }
+
+    private static void copy(String of, String wf) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(of));
+        BufferedWriter wr = new BufferedWriter(new FileWriter(wf));
+        String tmp = null;
+        StringBuffer sb = new StringBuffer();
+        tmp = br.readLine();
+        String cc = "\\\\";
+        String dd = "/";
+        while (tmp != null) {
+            if (tmp.indexOf("\\") != -1)
+                tmp = tmp.replaceAll(cc, dd);
+            wr.write(tmp);
+            wr.newLine();
+            tmp = br.readLine();
+        }
+        wr.close();
+        br.close();
+    }
+
 }
 
